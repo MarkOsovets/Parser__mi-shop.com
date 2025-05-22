@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS Products (
 CREATE TABLE IF NOT EXISTS Specifications (
     spec_id INTEGER PRIMARY KEY,
     product_id INTEGER NOT NULL,
-    description TEXT, 
+    image BLOB, 
     color VARCHAR(25),
     article VARCHAR(25),
     FOREIGN KEY (product_id) REFERENCES Products(product_id)

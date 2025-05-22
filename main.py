@@ -1,40 +1,40 @@
 from bs4 import BeautifulSoup
 import requests
 import lxml
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+#from selenium import webdriver
+#from selenium.webdriver.common.by import By
+#from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.common.action_chains import ActionChains
+#from selenium.webdriver.common.action_chains import ActionChains
 import aiohttp
 import asyncio
 import time
 from bd import add_db
+from urllib.parse import urljoin
 
+#chrome_path = "/usr/bin/google-chrome-stable"
 
-chrome_path = "/usr/bin/google-chrome-stable"
+HEADERS = {"User-Agent": "Mozilla/5.0"}
 
-
-options = Options()
-options.binary_location = chrome_path
-options.add_experimental_option("prefs", {
-    "profile.managed_default_content_settings.images": 2
+#options = Options()
+#options.binary_location = chrome_path
+#options.add_experimental_option("prefs", {
+#    "profile.managed_default_content_settings.images": 2
 #    "profile.managed_default_content_settings.stylesheet": 2,
 #    "profile.managed_default_content_settings.geolocation":2,
 #    "profile.managed_default_content_settings.javascript": 1 # 1 - разрешить, 2 - блокировать
 #    "profile.managed_default_content_settings.media_stream": 2,
-})
+#})
 
 
-url='https://mi-shop.com/catalog/audio/'
-browser = webdriver.Chrome(options=options)
-browser.get(url)
+base_url='https://mi-shop.com/catalog/audio/'
+#browser = webdriver.Chrome(options=options)
+#browser.get(url)
 
 
 
-response = requests.get(url)
-soup = BeautifulSoup(response.text, 'lxml')
+#response = requests.get(url)
+#soup = BeautifulSoup(response.text, 'lxml')
 
 async def fetch(session, url):
     async with session.get(url=url) as response:
@@ -49,7 +49,7 @@ async def scroll_page():
         tasks = []
         for page in range(1, 14): 
             if page == 1:
-                url = "https://mi-shop.com/catalog/audio/"
+                url = base_url
             else:
                 url = f"https://mi-shop.com/catalog/audio/?PAGEN_1={page}"
             tasks.append(asyncio.create_task(fetch(session, url)))
@@ -81,17 +81,19 @@ async def fetch1(session, url):
         try:
             name = (soup.select_one(".b-product-info__title.b-product-info__title--compare"))
             price = (soup.select_one(".b-product-info__price-new"))
-            description = (soup.select_one(".b-product-info__stat-line"))
+            img_tag = (soup.select_one("div.b-slider-images picture img"))
+            if img_tag and img_tag.has_attr("src"):
+                img_url = urljoin(url, img_tag["src"])
+                image = requests.get(img_url).content
+            else:
+                image = "Нет картинки"
             article_tag = (soup.select_one(".b-article"))
             color = (soup.select_one(".b-product-info__stat-color.is-active img"))
-            number_review = (soup.select_one(".b-product-info__link.b-product-info__link--review.no-wrap.js-review-count-string"))
             name = name.get_text(strip=True)
             price = price.get_text(strip=True) if price else "Нет в наличие"
-            description = description.get_text(strip=True) if description else "ERORR"
             article = ''.join(filter(str.isdigit, article_tag.get_text(strip=True))) if article_tag else "000000"
             color = color['alt'] if color else "ERORR"
-            number_review = number_review.get_text(strip=True) if number_review else "ERORR"
-            return (name, price, description, color, article)
+            return (name, price, image, color, article)
         except Exception as e:
             print(f"Error: {e}")
         
@@ -111,10 +113,6 @@ def main():
     #global browser
     urls = asyncio.run(scroll_page())
     results = asyncio.run(main1(urls))
-    browser.quit()
+    #browser.quit()
     add_db(results)
 
-
-
-#if __name__ == "__main__":
-#    main()
