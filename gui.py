@@ -1,25 +1,74 @@
 import tkinter as tk
-from main import main
+from main import pars_async, pars_sync
 import sqlite3
+from tkinter import ttk
 
+def get_data_from_db():
+    conn = sqlite3.connect("bd.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT 
+            category_stats.date,
+            category_stats.product_count,
+            Products.name,
+            Products.price,
+            Products.color,
+            Products.article
+        FROM Products
+        JOIN category_stats ON Products.product_id = category_stats.product_id
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def show_data():
+    # Очищаем таблицу
+    for item in tree.get_children():
+        tree.delete(item)
+
+    data = get_data_from_db()
+    if data:
+        # Отображаем дату и количество товаров из первой строки (предполагаем, что они одинаковы для всех)
+        date_value.set(f"Дата: {data[0][0]}")
+        count_value.set(f"Количество товаров: {data[0][1]}")
+        
+        # Заполняем таблицу остальными данными
+        for row in data:
+            tree.insert("", tk.END, values=row[2:])  # Пропускаем date и product_count
+
+# Главное окно
 root = tk.Tk()
 root.title("Парсер")
-root.geometry("640x640") 
+root.geometry("1000x700")  # Увеличенный размер
 
-button = tk.Button(root, text="Запустить парсер", command=main)
-button.pack(pady=20)
+# Верхние кнопки
+tk.Button(root, text="Асинхронный парсер", command=pars_async).pack(pady=5)
+tk.Button(root, text="Синхронный парсер", command=pars_sync).pack(pady=5)
+tk.Button(root, text="Показать данные", command=show_data).pack(pady=10)
 
-#def get_data_from_db():
-#     conn = sqlite3.connect("bd.db")
-#     cursor = conn.cursor()
-#     cursor.execute("SELECT product_id, name, price FROM Products", "SELECT image, color, article FROM Specifications")
+# Метки для даты и количества
+date_value = tk.StringVar()
+count_value = tk.StringVar()
 
+tk.Label(root, textvariable=date_value, font=("Arial", 12, "bold")).pack()
+tk.Label(root, textvariable=count_value, font=("Arial", 12, "bold")).pack()
 
+# Таблица (без date и product_count)
+columns = ("name", "price", "color", "article")
+tree = ttk.Treeview(root, columns=columns, show="headings")
+
+for col in columns:
+    tree.heading(col, text=col)
+    tree.column(col, width=150)
+
+tree.pack(fill="both", expand=True, padx=10, pady=10)
 
 root.mainloop()
 
 
 
+# if __name__ == "__main__":
+#     show_gui()
 
 #def on_select(event):
 #    for row in tree.get_children():
