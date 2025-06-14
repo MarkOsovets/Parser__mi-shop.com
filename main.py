@@ -1,10 +1,8 @@
-from async_parser import main_async
-from sync_parser import main_sync
+import tkinter
+from gui import AppMiShopPareser
+
+if __name__=="__main__":
+    root = AppMiShopPareser()
+    root.run()
 
 
-
-def pars_async():
-    main_async()
-
-def pars_sync():
-    main_sync()

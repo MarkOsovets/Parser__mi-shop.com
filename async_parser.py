@@ -96,11 +96,6 @@ async def fetch1(session, url):
             img_tag = (soup.select_one("div.b-slider-images picture img"))
             if img_tag and img_tag.has_attr("src"):
                 img_url = urljoin(url, img_tag["src"])
-                image = requests.get(img_url).content
-            else:
-                image = "Нет картинки"
-            if img_tag and img_tag.has_attr("src"):
-                img_url = urljoin(url, img_tag["src"])
                 async with session.get(img_url) as img_response:
                     image = await img_response.read()
             else:
