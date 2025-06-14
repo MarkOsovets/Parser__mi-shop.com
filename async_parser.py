@@ -99,12 +99,18 @@ async def fetch1(session, url):
                 image = requests.get(img_url).content
             else:
                 image = "Нет картинки"
+            if img_tag and img_tag.has_attr("src"):
+                img_url = urljoin(url, img_tag["src"])
+                async with session.get(img_url) as img_response:
+                    image = await img_response.read()
+            else:
+                image = "Нет картинки"
             article_tag = (soup.select_one(".b-article"))
             color = (soup.select_one(".b-product-info__stat-color.is-active img"))
             name = name.get_text(strip=True)
             price = price.get_text(strip=True) if price else "Нет в наличие"
-            article = ''.join(filter(str.isdigit, article_tag.get_text(strip=True))) if article_tag else "000000"
-            color = color['alt'] if color else "ERORR"
+            article = ''.join(filter(str.isdigit, article_tag.get_text(strip=True))) if article_tag else "00000"
+            color = color['alt'] if color else "error"
             return (name, price, image, color, article)
         except Exception as e:
             print(f"Error: {e}")
@@ -124,11 +130,11 @@ async def main1(urls):
 def main_async():
     start_time = time.time()
     #global browser
-    product_id = add_category_stats(today, product_count)
+    entry_id = add_category_stats(today, product_count)
     urls = asyncio.run(scroll_page())
     results = asyncio.run(main1(urls))
     #browser.quit()
-    add_products(product_id, results)
+    add_products(entry_id, results)
     close_db()
     end_time = time.time()
     time_work = end_time - start_time

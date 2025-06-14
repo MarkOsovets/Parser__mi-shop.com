@@ -79,10 +79,10 @@ def main1(urls):
 
 def main_sync():
     start_time = time.time()
-    product_id = add_category_stats(today, product_count)
+    entry_id = add_category_stats(today, product_count)
     urls = scroll_page()
     results = main1(urls)
-    add_products(product_id, results)
+    add_products(entry_id, results)
     close_db()
     end_time = time.time()
     time_work = end_time - start_time

@@ -9,16 +9,19 @@ def add_category_stats(date, product_count):
     cursor.execute("INSERT INTO category_stats (date, product_count) VALUES (?, ?)", 
     (date, product_count)
     )
-    product_id = cursor.lastrowid
+    entry_id = cursor.lastrowid
     conn.commit()
-    return product_id
+    return entry_id
 
-def add_products(product_id, results):
+def add_products(entry_id, results):
     for name, price, image, color, article in results:
+        if any(i.isdigit() for i in price):
+             price = filter(str.isdigit, price)
+             price = int(''.join(price))
         cursor.execute(
-            "INSERT INTO Products (product_id, name, price, image, color, article) VALUES (?, ?, ?, ?, ?, ?)",
-            (product_id, name, price, image, color, article)
-        )
+            "INSERT INTO Products (entry_id, name, price, image, color, article) VALUES (?, ?, ?, ?, ?, ?)",
+            (entry_id, name, price, image, color, article)
+        )   
     conn.commit()
 
 
