@@ -3,6 +3,8 @@ from async_parser import main_async
 from sync_parser import main_sync
 import sqlite3
 from tkinter import ttk
+from PIL import Image, ImageTk
+import io  # Для работы с бинарными данными
 
 class AppMiShopPareser:
     def __init__(self):
@@ -29,7 +31,7 @@ class AppMiShopPareser:
 
     def create_table(self):
         frame_top = tk.Frame(self.root, bg="lightgrey", height=200)
-        frame_top.grid(row=4, column=0, columnspan=3, pady=10, sticky="nsew")
+        frame_top.grid(row=4, column=0, columnspan=2, pady=10, sticky="nsew")
 
         frame_bottom = tk.Frame(self.root,bg="white", height=200)
         frame_bottom.grid(row=6, column=0, columnspan=3, pady=10, sticky="nsew")
@@ -50,6 +52,8 @@ class AppMiShopPareser:
         products.heading("entry_id", text="ID записи")
         products.heading("spec_id", text="ID продукта")
         products.pack(padx=20)
+        products.bind("<<TreeviewSelect>>", self.create_image)
+
 
         stats = ttk.Treeview(frame_top, columns=("Date", "Count", "entryID"), show="headings")
         stats.heading("Date", text="Дата")
@@ -58,6 +62,30 @@ class AppMiShopPareser:
         stats.pack()
         stats.bind("<<TreeviewSelect>>", self.on_stats_select)
         return stats, products
+
+
+    def create_image(self, event):
+        frame_image = tk.Frame(self.root, bg="lightgray", padx=10, pady=10)
+        frame_image.grid(row=4, column=2, columnspan=2, sticky="w")
+        selected_it = self.products.focus()
+        if not selected_it:
+            return 
+
+        spec_id = self.products.item(selected_it)["values"][5]
+
+
+        result = self.cursor.execute("SELECT image FROM Products WHERE spec_id=?", (spec_id,))
+        blob_data = self.cursor.fetchone()[0]
+        image = Image.open(io.BytesIO(blob_data))
+
+        image = image.resize((200, 200), Image.LANCZOS)     # Масштабируем изображение (опционально)
+        image = ImageTk.PhotoImage(image)     # Конвертируем в формат Tkinter
+
+
+        label = tk.Label(frame_image, image=image, bg="lightgray")
+        label.image = image
+        label.pack()
+
 
     def on_stats_select(self, event):
         selected_item = self.stats.focus()
@@ -82,8 +110,6 @@ class AppMiShopPareser:
         entry.grid(row=0, column=0, padx=5)
 
         tk.Button(frame, text="Поиск", command=self.search_tree).grid(row=0, column=1, padx=5)
-
-
 
 
     def search_tree(self):
