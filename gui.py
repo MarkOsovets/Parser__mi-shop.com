@@ -12,105 +12,113 @@ class AppMiShopPareser:
         self.cursor = self.conn.cursor()
         self.root = self.create_root()
         self.search_var = tk.StringVar()
-    
+
+        # Стилизация таблиц
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("Treeview.Heading", font=("Arial", 10, "bold"),
+                        background="#ff6900", foreground="white")
+        style.configure("Treeview", font=("Arial", 10), rowheight=25,
+                        fieldbackground="white", background="white")
+
     def create_root(self):
         root = tk.Tk()
-        root.title("Парсер mi-shop.com")
-        root.geometry("1250x700")
+        root.title("Парсер mi-shop.com audio")
+        root.geometry("1250x850")
+        root.configure(bg="#f7f7f7")  # Светлый фон в стиле Xiaomi
         return root
 
     def base_frame(self):
-        frame_base = tk.Frame(self.root)
+        frame_base = tk.Frame(self.root, bg="#f7f7f7")
         frame_base.grid(row=2, column=1, columnspan=2, pady=5, sticky="nsew")
 
-        tk.Button(frame_base, text="Асинхронный парсер", command=main_async).grid(row=0, column=0, padx=5)
-        tk.Button(frame_base, text="Синхронный парсер", command=main_sync).grid(row=0, column=1, padx=5)
+        tk.Button(frame_base, text="Асинхронный парсер", command=main_async,
+                  bg="#ff6900", fg="white", padx=10).grid(row=0, column=0, padx=5)
+        tk.Button(frame_base, text="Синхронный парсер", command=main_sync,
+                  bg="#ff6900", fg="white", padx=10).grid(row=0, column=1, padx=5)
 
-        frame_base.grid_columnconfigure(2, weight=1)  # Растяжка
-        tk.Button(frame_base, text="Обновить данные", command=self.show_data).grid(row=0, column=3, padx=5, sticky="e")
+        frame_base.grid_columnconfigure(2, weight=1)
+        tk.Button(frame_base, text="Обновить данные", command=self.show_data,
+                  bg="#ff6900", fg="white", padx=10).grid(row=0, column=3, padx=5, sticky="e")
 
     def create_table(self):
-        frame_top = tk.Frame(self.root, bg="lightgrey", height=200)
-        frame_top.grid(row=4, column=0, columnspan=2, pady=10, sticky="nsew")
+        frame_top = tk.LabelFrame(self.root, text="📊 Статистика", bg="#ffffff", padx=10, pady=5)
+        frame_top.grid(row=4, column=0, columnspan=2, pady=10, padx=10, sticky="nsew")
 
-        frame_bottom = tk.Frame(self.root,bg="white", height=200)
-        frame_bottom.grid(row=6, column=0, columnspan=3, pady=10, sticky="nsew")
+        frame_bottom = tk.LabelFrame(self.root, text="🛒 Продукты", bg="#ffffff", padx=10, pady=5)
+        frame_bottom.grid(row=6, column=0, columnspan=3, pady=10, padx=10, sticky="nsew")
 
-        label = tk.Label(frame_top, text="Записи")
+        label = tk.Label(frame_top, text="Записи", bg="#ffffff", fg="#333333")
         label.pack()
 
-        label = tk.Label(frame_bottom, text="Продукты",bg="white")
-        label.pack() 
+        label = tk.Label(frame_bottom, text="Продукты", bg="#ffffff", fg="#333333")
+        label.pack()
 
         columns = ("Name", "Price", "Article", "Color", "entry_id", "spec_id")
-        products = ttk.Treeview(frame_bottom, columns=columns, show="headings")
+        products = ttk.Treeview(frame_bottom, columns=columns, show="headings", selectmode="browse")
         products.heading("Name", text="Название")
         products.heading("Price", text="Цена")
         products.heading("Article", text="Артикль")
         products.heading("Color", text="Цвет")
-        #products.heading("Image", text="Изображение")
         products.heading("entry_id", text="ID записи")
         products.heading("spec_id", text="ID продукта")
-        products.pack(padx=20)
+        products.pack(fill="both", expand=True)
         products.bind("<<TreeviewSelect>>", self.create_image)
 
-
-        stats = ttk.Treeview(frame_top, columns=("Date", "Count", "entryID"), show="headings")
+        stats = ttk.Treeview(frame_top, columns=("Date", "Count", "entryID"), show="headings", selectmode="browse")
         stats.heading("Date", text="Дата")
         stats.heading("Count", text="Количество")
         stats.heading("entryID", text="ID записи")
-        stats.pack()
+        stats.pack(fill="both", expand=True)
         stats.bind("<<TreeviewSelect>>", self.on_stats_select)
+
         return stats, products
 
-
     def create_image(self, event):
-        frame_image = tk.Frame(self.root, bg="lightgray", padx=10, pady=10)
-        frame_image.grid(row=4, column=2, columnspan=2, sticky="w")
+        frame_image = tk.Frame(self.root, bg="#f2f2f2", padx=10, pady=10)
+        frame_image.grid(row=4, column=2, columnspan=2, sticky="nsew")
+
         selected_it = self.products.focus()
         if not selected_it:
-            return 
+            return
 
         spec_id = self.products.item(selected_it)["values"][5]
-
 
         result = self.cursor.execute("SELECT image FROM Products WHERE spec_id=?", (spec_id,))
         blob_data = self.cursor.fetchone()[0]
         image = Image.open(io.BytesIO(blob_data))
 
-        image = image.resize((200, 200), Image.LANCZOS)     # Масштабируем изображение (опционально)
-        image = ImageTk.PhotoImage(image)     # Конвертируем в формат Tkinter
+        image = image.resize((240, 200), Image.LANCZOS)
+        image = ImageTk.PhotoImage(image)
 
-
-        label = tk.Label(frame_image, image=image, bg="lightgray")
+        label = tk.Label(frame_image, image=image, bg="#f2f2f2")
         label.image = image
         label.pack()
-
 
     def on_stats_select(self, event):
         selected_item = self.stats.focus()
         if not selected_item:
-            return 
-        
+            return
+
         entry_id = self.stats.item(selected_item)["values"][2]
 
         for i in self.products.get_children():
             self.products.delete(i)
 
-        self.cursor.execute("SELECT name, price, article, color, entry_id, spec_id FROM Products WHERE entry_id=?", (entry_id,))
-
+        self.cursor.execute(
+            "SELECT name, price, article, color, entry_id, spec_id FROM Products WHERE entry_id=?", (entry_id,))
         for row in self.cursor.fetchall():
             self.products.insert("", "end", values=row)
 
     def build_search(self):
-        frame = tk.Frame(self.root, bg="#ffffff")
-        frame.grid(row=5, column=0, columnspan=3, padx=10, pady=5, sticky="s")
+        frame = tk.Frame(self.root, bg="#f7f7f7")
+        frame.grid(row=5, column=0, columnspan=3, padx=10, pady=5, sticky="ew")
 
-        entry = tk.Entry(frame, textvariable=self.search_var, width=30)
+        entry = tk.Entry(frame, textvariable=self.search_var, width=40, font=("Arial", 11))
         entry.grid(row=0, column=0, padx=5)
 
-        tk.Button(frame, text="Поиск", command=self.search_tree).grid(row=0, column=1, padx=5)
-
+        tk.Button(frame, text="🔍 Поиск", command=self.search_tree,
+                  bg="#ff6900", fg="white").grid(row=0, column=1, padx=5)
 
     def search_tree(self):
         query = self.search_var.get().strip()
@@ -146,22 +154,19 @@ class AppMiShopPareser:
         for row in self.cursor.fetchall():
             self.products.insert('', 'end', values=row)
 
-
     def show_data(self):
         for item in self.stats.get_children():
             self.stats.delete(item)
         for item in self.products.get_children():
             self.products.delete(item)
-        
+
         self.cursor.execute("SELECT date, product_count, entry_id FROM category_stats")
         for row in self.cursor.fetchall():
             self.stats.insert('', 'end', values=row)
 
-
         self.cursor.execute("SELECT name, price, article, color, entry_id, spec_id FROM Products")
         for row in self.cursor.fetchall():
             self.products.insert('', 'end', values=row)
-
 
     def run(self):
         self.base_frame()
@@ -169,4 +174,6 @@ class AppMiShopPareser:
         self.build_search()
         self.show_data()
         self.root.mainloop()
-        
+
+if __name__ == "__main__":
+    AppMiShopPareser().run()
